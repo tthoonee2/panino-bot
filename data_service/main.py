@@ -809,13 +809,19 @@ async def full_context(
     Returns a pre-formatted markdown string ready to paste into a system prompt.
     Combines: market snapshot, macro, Sandwich Index, relevant news.
     """
-    # Run in parallel
+    # Per-task timeout so a slow source (e.g. ISTAT cold start) doesn't block the whole response
+    async def with_timeout(coro, seconds):
+        try:
+            return await asyncio.wait_for(coro, timeout=seconds)
+        except (asyncio.TimeoutError, Exception) as e:
+            return e
+
     tasks = [
-        market_snapshot(),
-        sandwich_index_latest(),
-        eurozone_macro(),
-        ansa_news(topic=topic),
-        fetch_istat_italy_snapshot(),
+        with_timeout(market_snapshot(), 15),
+        with_timeout(sandwich_index_latest(), 15),
+        with_timeout(eurozone_macro(), 15),
+        with_timeout(ansa_news(topic=topic), 10),
+        with_timeout(fetch_istat_italy_snapshot(), 20),
     ]
 
     results = await asyncio.gather(*tasks, return_exceptions=True)

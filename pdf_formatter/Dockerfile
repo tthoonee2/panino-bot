@@ -15,7 +15,8 @@ RUN mkdir -p /tmp/sandwich_pdfs
 
 EXPOSE 8001
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8001/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-8001}/health || exit 1
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Shell form so ${PORT:-8001} expands at runtime
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8001}
